@@ -10,13 +10,27 @@ ifeq (,$(VERSION))
   endif
 endif
 
+build_tags = netgo
+build_tags += $(BUILD_TAGS)
+build_tags := $(strip $(build_tags))
+
+whitespace :=
+empty = $(whitespace) $(whitespace)
+comma := ,
+build_tags_comma_sep := $(subst $(empty),$(comma),$(build_tags))
+
 # Update the ldflags with the app, client & server names
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=mini \
 	-X github.com/cosmos/cosmos-sdk/version.AppName=minid \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
+	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
-BUILD_FLAGS := -ldflags '$(ldflags)'
+ifeq ($(LINK_STATICALLY),true)
+	ldflags += -linkmode=external -extldflags "-Wl,-z,muldefs -static"
+endif
+
+BUILD_FLAGS := -tags "$(build_tags_comma_sep)" -ldflags '$(ldflags)'
 
 ###########
 # Install #
